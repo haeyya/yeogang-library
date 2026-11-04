@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도서관 전자칠판</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gaegu:wght@400;700&family=Gowun+Dodum&family=Jua&family=Noto+Serif+KR:wght@500;700&display=swap">
+<style>
+:root{--bg:#16343a;--panel:#1f4a52;--ink:#f3f7f4;--accent:#f2b134;--face:#f4f8f5;--faceInk:#16343a;--font:'Gowun Dodum';--scale:1.6}
+*{box-sizing:border-box;margin:0}
+html{font-size:calc(var(--scale)*1vmin)}
+body{height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font),'Malgun Gothic',sans-serif;overflow:hidden}
+.wrap{height:100%;display:grid;grid-template-columns:36% 1fr;grid-template-rows:1fr auto;gap:1.2rem;padding:1.6rem}
+.wrap.flip{grid-template-columns:1fr 36%}
+.wrap.flip .clock{order:2}
+.clock{background:var(--panel);border-radius:2rem;padding:1.4rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;min-height:0}
+#face{width:100%;flex:1;min-height:0}
+.digital{font-size:4.2rem;line-height:1;letter-spacing:.02em}
+.digital small{font-size:2rem;margin-right:.6rem;color:var(--accent)}
+.date{font-size:1.9rem;opacity:.9}
+.main{position:relative;min-height:0;display:flex;flex-direction:column}
+.slides{flex:1;position:relative;min-height:0}
+.s{position:absolute;inset:0;display:flex;gap:2rem;align-items:center;padding:2.4rem 3rem;opacity:0;transition:opacity .8s;pointer-events:none}
+.s.on{opacity:1}
+.s img{height:100%;max-width:38%;object-fit:contain;border-radius:1rem;box-shadow:0 .6rem 2rem rgba(0,0,0,.35)}
+.s .t{flex:1;min-width:0}
+.tag{display:inline-block;background:var(--accent);color:var(--bg);font-size:1.8rem;padding:.2rem 1.1rem;border-radius:.5rem;margin-bottom:1.2rem}
+.s h2{font-size:4.6rem;line-height:1.2;font-weight:700;word-break:keep-all}
+.s p{font-size:2.5rem;line-height:1.55;margin-top:1.2rem;opacity:.92;word-break:keep-all}
+.dots{display:flex;gap:.6rem;justify-content:center;padding:.4rem}
+.dots i{width:1rem;height:1rem;border-radius:50%;background:var(--ink);opacity:.25}
+.dots i.on{background:var(--accent);opacity:1}
+.foot{grid-column:1/-1;display:flex;gap:1.2rem;align-items:stretch;min-height:0}
+.ticker{flex:1;background:var(--panel);border-radius:1.4rem;padding:1rem 2rem;font-size:2.2rem;display:flex;align-items:center}
+#yt{width:26vw;aspect-ratio:16/9;border-radius:1.2rem;overflow:hidden;background:#000;display:none}
+#yt.has{display:block}
+#yt iframe{width:100%;height:100%;border:0}
+#gear{position:fixed;top:.6rem;right:.6rem;width:3rem;height:3rem;border-radius:50%;border:0;background:var(--accent);color:var(--bg);font-size:1.6rem;opacity:.12;cursor:pointer}
+#gear:hover,#gear:focus{opacity:1}
+#set{position:fixed;top:0;right:0;bottom:0;width:min(30rem,92vw);background:#fff;color:#222;font-family:'Malgun Gothic',sans-serif;font-size:15px;padding:16px;overflow:auto;transform:translateX(105%);transition:transform .25s;box-shadow:-6px 0 24px rgba(0,0,0,.35);z-index:9}
+#set.open{transform:none}
+#set h3{margin:14px 0 6px;font-size:16px;border-bottom:2px solid #ddd;padding-bottom:4px}
+#set label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0}
+#set input[type=text],#set select,#set textarea{width:100%;font:inherit;padding:6px;border:1px solid #bbb;border-radius:6px}
+#set textarea{height:170px;font-size:13px}
+#set input[type=color]{width:56px;height:30px;padding:0;border:1px solid #bbb}
+#set button{font:inherit;padding:7px 12px;border:1px solid #888;border-radius:8px;background:#f3f3f3;cursor:pointer;margin:3px 3px 3px 0}
+#set button.p{background:#222;color:#fff}
+#set .hint{font-size:12.5px;color:#666;line-height:1.45;margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <section class="clock">
+    <svg id="face" viewBox="-56 -56 112 112" aria-label="아날로그 시계"></svg>
+    <div class="digital" id="dig"></div>
+    <div class="date" id="date"></div>
+  </section>
+  <section class="main">
+    <div class="slides" id="slides"></div>
+    <div class="dots" id="dots"></div>
+  </section>
+  <div class="foot">
+    <div class="ticker" id="ticker"></div>
+    <div id="yt"></div>
+  </div>
+</div>
+
+<button id="gear" title="설정 (S 키)" aria-label="설정">⚙</button>
+<aside id="set" aria-label="설정">
+  <button class="p" id="close">닫기</button>
+  <h3>디자인 세트</h3>
+  <div id="presets"></div>
+  <h3>색</h3>
+  <label>배경 <input type="color" id="bg"></label>
+  <label>시계·카드 바탕 <input type="color" id="panel"></label>
+  <label>글자 <input type="color" id="ink"></label>
+  <label>강조(태그·점) <input type="color" id="accent"></label>
+  <label>시계판 <input type="color" id="face"></label>
+  <label>시계 숫자·바늘 <input type="color" id="faceInk"></label>
+  <h3>글꼴·크기·배치</h3>
+  <label>글꼴 <select id="font">
+    <option>Gowun Dodum</option><option>Jua</option><option>Do Hyeon</option><option>Gaegu</option><option>Noto Serif KR</option>
+  </select></label>
+  <label>전체 크기 <input type="range" id="scale" min="1" max="2.4" step=".05"></label>
+  <label>시계 위치 <select id="flip"><option value="0">왼쪽</option><option value="1">오른쪽</option></select></label>
+  <label>시계 보조 숫자(분) <select id="mins"><option value="1">표시</option><option value="0">숨김</option></select></label>
+  <label>슬라이드 간격(초) <input type="text" id="interval" size="3" style="width:60px"></label>
+  <h3>신간·행사 내용</h3>
+  <p class="hint">한 줄에 하나씩: <b>구분|제목|설명|이미지주소(선택)</b><br>예) 신간|바다로 간 고양이|표지가 예쁜 동화책이에요|https://...</p>
+  <textarea id="slidesTxt"></textarea>
+  <h3>하단 안내 문구</h3>
+  <input type="text" id="tickerTxt">
+  <h3>유튜브</h3>
+  <p class="hint">재생목록 또는 영상 주소를 붙여 넣고 입력칸 밖을 클릭하세요. 처음 한 번은 영상 재생 버튼을 눌러야 소리가 나요.</p>
+  <input type="text" id="yt_in" placeholder="https://www.youtube.com/playlist?list=...">
+  <label>플레이어 크기 <input type="range" id="ytw" min="12" max="50" step="1"></label>
+  <h3>저장하기</h3>
+  <p class="hint">여기서 바꾼 내용은 미리보기예요. 칠판에 반영하려면 아래 버튼으로 복사해서 GitHub의 <b>config.json</b>에 붙여 넣고 저장(Commit)하세요. 1분 안에 칠판이 알아서 바뀌어요.</p>
+  <button class="p" id="copy">config.json 내용 복사</button>
+  <button id="reload">저장된 설정 다시 불러오기</button>
+  <textarea id="out" style="display:none;height:120px"></textarea>
+</aside>
+
+<script>
+const PRESETS={
+ '숲속 칠판':{bg:'#16343a',panel:'#1f4a52',ink:'#f3f7f4',accent:'#f2b134',face:'#f4f8f5',faceInk:'#16343a'},
+ '밤하늘':{bg:'#141b3a',panel:'#212b57',ink:'#eef2ff',accent:'#7fd1ff',face:'#e9eeff',faceInk:'#141b3a'},
+ '밝은 교실':{bg:'#eef3f8',panel:'#ffffff',ink:'#1b2a3a',accent:'#e4572e',face:'#fffaf0',faceInk:'#1b2a3a'},
+ '딸기우유':{bg:'#ffe3ea',panel:'#fff5f7',ink:'#4a2030',accent:'#e0457b',face:'#ffffff',faceInk:'#4a2030'}
+};
+const D=Object.assign({font:'Gowun Dodum',scale:1.6,flip:'0',mins:'1',interval:'8',yt:'',ytw:26,
+ ticker:'조용히 책을 읽는 도서관이에요. 책은 3주 동안 빌릴 수 있어요.',
+ slides:'신간|신간 도서 제목 예시|여기에 책 소개를 두세 줄로 적어 주세요.\n행사|독서의 달 행사|11월 한 달 동안 독서 퀴즈와 책갈피 만들기를 해요.\n안내|도서 반납 안내|빌린 책은 기한 안에 반납함에 넣어 주세요.'},PRESETS['숲속 칠판']);
+let S=Object.assign({},D);
+const $=id=>document.getElementById(id);
+const save=()=>{};
+
+/* 시계 */
+const NS='http://www.w3.org/2000/svg',face=$('face');
+function el(n,a,p=face){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e}
+function buildFace(){
+ face.innerHTML='';
+ el('circle',{r:54,fill:'var(--face)',stroke:'var(--faceInk)','stroke-width':1.2});
+ for(let i=0;i<60;i++){const a=i*6*Math.PI/180,big=i%5==0,r1=53,r2=big?49.8:51.6;
+  el('line',{x1:Math.sin(a)*r1,y1:-Math.cos(a)*r1,x2:Math.sin(a)*r2,y2:-Math.cos(a)*r2,stroke:'var(--faceInk)','stroke-width':big?.9:.4})}
+ for(let h=1;h<=12;h++){const a=h*30*Math.PI/180,t=el('text',{x:Math.sin(a)*35,y:-Math.cos(a)*35+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'var(--faceInk)'});t.textContent=h;
+  if(S.mins=='1'){const m=el('text',{x:Math.sin(a)*45,y:-Math.cos(a)*45+1.4,'text-anchor':'middle','font-size':3.6,fill:'var(--faceInk)',opacity:.7});m.textContent=h*5}}
+ window.hH=el('line',{y2:-22,stroke:'var(--accent)','stroke-width':4.2,'stroke-linecap':'round'});
+ window.hM=el('line',{y2:-37,stroke:'var(--faceInk)','stroke-width':2.6,'stroke-linecap':'round'});
+ window.hS=el('line',{y1:6,y2:-40,stroke:'#d9363e','stroke-width':.9,'stroke-linecap':'round'});
+ el('circle',{r:2.2,fill:'var(--faceInk)'});
+}
+const DAYS=['일','월','화','수','목','금','토'];
+/* 인터넷(서버) 시간에 맞추기 + 한국 시간 고정 */
+let off=0;
+function sync(){
+ const t0=Date.now();
+ fetch(location.pathname+'?t='+t0,{method:'HEAD',cache:'no-store'}).then(r=>{
+  const h=r.headers.get('Date');if(!h)return;
+  const t1=Date.now();off=new Date(h).getTime()+500-(t0+t1)/2;
+ }).catch(()=>{});
+}
+function tick(){
+ const d=new Date(Date.now()+off+9*36e5),h=d.getUTCHours(),m=d.getUTCMinutes(),s=d.getUTCSeconds();
+ hH.setAttribute('transform',`rotate(${(h%12)*30+m*.5})`);
+ hM.setAttribute('transform',`rotate(${m*6+s*.1})`);
+ hS.setAttribute('transform',`rotate(${s*6})`);
+ $('dig').innerHTML=`<small>${h<12?'오전':'오후'}</small>${h%12||12}:${String(m).padStart(2,'0')}`;
+ $('date').textContent=`${d.getUTCFullYear()}년 ${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 ${DAYS[d.getUTCDay()]}요일`;
+}
+
+/* 슬라이드 */
+let idx=0,timer;
+function buildSlides(){
+ const box=$('slides'),dots=$('dots');box.innerHTML='';dots.innerHTML='';
+ const rows=S.slides.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split('|').map(x=>x.trim()));
+ rows.forEach(([tag,title,desc,img],i)=>{
+  const s=document.createElement('div');s.className='s';
+  if(img&&/^https?:/.test(img)){const im=document.createElement('img');im.src=img;im.alt='';s.appendChild(im)}
+  const t=document.createElement('div');t.className='t';
+  const g=document.createElement('span');g.className='tag';g.textContent=tag||'';
+  const h=document.createElement('h2');h.textContent=title||'';
+  const p=document.createElement('p');p.textContent=desc||'';
+  t.append(g,h,p);s.appendChild(t);box.appendChild(s);
+  dots.appendChild(document.createElement('i'));
+ });
+ idx=0;show();clearInterval(timer);
+ const sec=Math.max(3,parseFloat(S.interval)||8);
+ timer=setInterval(()=>{idx++;show()},sec*1000);
+}
+function show(){
+ const ss=[...$('slides').children],dd=[...$('dots').children];if(!ss.length)return;
+ idx%=ss.length;ss.forEach((e,i)=>e.classList.toggle('on',i==idx));dd.forEach((e,i)=>e.classList.toggle('on',i==idx));
+}
+
+/* 유튜브 */
+let curYt=null;
+function buildYt(){
+ const box=$('yt');if(curYt===S.yt)return;curYt=S.yt;box.innerHTML='';
+ let list=(S.yt.match(/[?&]list=([\w-]+)/)||[])[1],vid=(S.yt.match(/(?:v=|youtu\.be\/)([\w-]{11})/)||[])[1],src='';
+ if(list)src=`https://www.youtube.com/embed/${vid||'videoseries'}?list=${list}&loop=1&rel=0`;
+ else if(vid)src=`https://www.youtube.com/embed/${vid}?loop=1&playlist=${vid}&rel=0`;
+ box.classList.toggle('has',!!src);
+ if(src){const f=document.createElement('iframe');f.src=src;f.allow='autoplay; encrypted-media; fullscreen';f.title='음악';box.appendChild(f)}
+}
+
+/* 적용 */
+function apply(){
+ const r=document.documentElement.style;
+ ['bg','panel','ink','accent','face','faceInk'].forEach(k=>r.setProperty('--'+k,S[k]));
+ r.setProperty('--font',`'${S.font}'`);r.setProperty('--scale',S.scale);
+ $('wrap').classList.toggle('flip',S.flip=='1');
+ $('ticker').textContent=S.ticker;$('ticker').style.display=S.ticker?'flex':'none';
+ $('yt').style.width=S.ytw+'vw';
+ buildFace();tick();
+}
+
+/* 설정 패널 */
+const pr=$('presets');
+Object.keys(PRESETS).forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{Object.assign(S,PRESETS[n]);save();fill();apply()};pr.appendChild(b)});
+const colorIds=['bg','panel','ink','accent','face','faceInk'];
+function fill(){
+ colorIds.forEach(k=>$(k).value=S[k]);
+ $('font').value=S.font;$('scale').value=S.scale;$('flip').value=S.flip;$('mins').value=S.mins;
+ $('interval').value=S.interval;$('slidesTxt').value=S.slides;$('tickerTxt').value=S.ticker;$('yt_in').value=S.yt;$('ytw').value=S.ytw;
+}
+colorIds.concat(['font','scale','flip','mins']).forEach(k=>$(k).addEventListener('input',e=>{S[k]=e.target.value;save();apply()}));
+$('ytw').addEventListener('input',e=>{S.ytw=e.target.value;save();apply()});
+$('tickerTxt').addEventListener('input',e=>{S.ticker=e.target.value;save();apply()});
+$('interval').addEventListener('change',e=>{S.interval=e.target.value;save();buildSlides()});
+$('slidesTxt').addEventListener('change',e=>{S.slides=e.target.value;save();buildSlides()});
+$('yt_in').addEventListener('change',e=>{S.yt=e.target.value.trim();save();buildYt()});
+$('copy').onclick=()=>{
+ const txt=JSON.stringify(S,null,2),o=$('out');
+ const ok=()=>{$('copy').textContent='복사됐어요!';setTimeout(()=>$('copy').textContent='config.json 내용 복사',2000)};
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok,()=>{o.style.display='block';o.value=txt;o.select()})}
+ else{o.style.display='block';o.value=txt;o.select()}
+};
+$('reload').onclick=()=>loadRemote(true);
+const panel=$('set');
+$('gear').onclick=()=>panel.classList.toggle('open');
+$('close').onclick=()=>panel.classList.remove('open');
+addEventListener('keydown',e=>{if(e.key==='s'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))panel.classList.toggle('open')});
+
+let lastCfg=null;
+function loadRemote(force){
+ if(!force&&panel.classList.contains('open'))return;
+ fetch('config.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(c=>{
+  const str=JSON.stringify(c);
+  if(!force&&str===lastCfg)return;
+  lastCfg=str;S=Object.assign({},D,c);fill();apply();buildSlides();buildYt();
+ }).catch(()=>{});
+}
+fill();apply();buildSlides();buildYt();setInterval(tick,500);
+loadRemote(true);setInterval(loadRemote,60000);
+sync();setInterval(sync,3600000);
+</script>
+</body>
+</html>
