@@ -151,6 +151,7 @@ function tick(){
 }
 
 /* 슬라이드 */
+function br(el,str){str.split(/<br>/i).forEach((t,i)=>{if(i)el.appendChild(document.createElement('br'));el.appendChild(document.createTextNode(t.trim()))})}
 let idx=0,timer;
 function buildSlides(){
  const box=$('slides'),dots=$('dots');box.innerHTML='';dots.innerHTML='';
@@ -160,8 +161,8 @@ function buildSlides(){
   if(img&&/^https?:/.test(img)){const im=document.createElement('img');im.src=img;im.alt='';s.appendChild(im)}
   const t=document.createElement('div');t.className='t';
   const g=document.createElement('span');g.className='tag';g.textContent=tag||'';
-  const h=document.createElement('h2');h.textContent=title||'';
-  const p=document.createElement('p');p.textContent=desc||'';
+  const h=document.createElement('h2');br(h,title||'');
+  const p=document.createElement('p');br(p,desc||'');
   t.append(g,h,p);s.appendChild(t);box.appendChild(s);
   dots.appendChild(document.createElement('i'));
  });
