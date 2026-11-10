@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>도서관 전자칠판</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gaegu:wght@400;700&family=Gowun+Dodum&family=Jua&family=Noto+Serif+KR:wght@500;700&display=swap">
@@ -15,9 +16,9 @@ body{height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font),
 .wrap.flip .clock{order:2}
 .clock{background:var(--panel);border-radius:2rem;padding:1.4rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;min-height:0}
 #face{width:100%;flex:1;min-height:0}
-.digital{font-size:4.2rem;line-height:1;letter-spacing:.02em}
-.digital small{font-size:2rem;margin-right:.6rem;color:var(--accent)}
-.date{font-size:1.9rem;opacity:.9}
+.digital{font-size:5.4rem;line-height:1;letter-spacing:.02em}
+.digital small{font-size:2.7rem;margin-right:.6rem;color:var(--accent)}
+.date{font-size:2.5rem;opacity:.92;text-align:center}
 .main{position:relative;min-height:0;display:flex;flex-direction:column}
 .slides{flex:1;position:relative;min-height:0}
 .s{position:absolute;inset:0;display:flex;gap:2rem;align-items:center;padding:2.4rem 3rem;opacity:0;transition:opacity .8s;pointer-events:none}
@@ -25,18 +26,22 @@ body{height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font),
 .s img{height:100%;max-width:38%;object-fit:contain;border-radius:1rem;box-shadow:0 .6rem 2rem rgba(0,0,0,.35)}
 .s .t{flex:1;min-width:0}
 .tag{display:inline-block;background:var(--accent);color:var(--bg);font-size:1.8rem;padding:.2rem 1.1rem;border-radius:.5rem;margin-bottom:1.2rem}
+.s h2,.s p{white-space:pre-wrap}
 .s h2{font-size:4.6rem;line-height:1.2;font-weight:700;word-break:keep-all}
 .s p{font-size:2.5rem;line-height:1.55;margin-top:1.2rem;opacity:.92;word-break:keep-all}
+.pinned .s h2{font-size:5.8rem}.pinned .s p{font-size:3.1rem}
 .dots{display:flex;gap:.6rem;justify-content:center;padding:.4rem}
 .dots i{width:1rem;height:1rem;border-radius:50%;background:var(--ink);opacity:.25}
 .dots i.on{background:var(--accent);opacity:1}
 .foot{grid-column:1/-1;display:flex;gap:1.2rem;align-items:stretch;min-height:0}
+.ticker div{white-space:pre-wrap;line-height:1.4}
 .ticker{flex:1;background:var(--panel);border-radius:1.4rem;padding:1rem 2rem;font-size:2.2rem;display:flex;align-items:center}
 #yt{width:26vw;aspect-ratio:16/9;border-radius:1.2rem;overflow:hidden;background:#000;display:none}
 #yt.has{display:block}
 #yt iframe{width:100%;height:100%;border:0}
-#gear{position:fixed;top:.6rem;right:.6rem;width:3rem;height:3rem;border-radius:50%;border:0;background:var(--accent);color:var(--bg);font-size:1.6rem;opacity:.12;cursor:pointer}
-#gear:hover,#gear:focus{opacity:1}
+#gear,#fs{position:fixed;top:.6rem;width:3.4rem;height:3.4rem;border-radius:50%;border:0;background:var(--accent);color:var(--bg);font-size:1.8rem;opacity:.2;cursor:pointer}
+#gear{right:.6rem}#fs{right:4.4rem}
+#gear:hover,#gear:focus,#fs:hover,#fs:focus{opacity:1}
 #set{position:fixed;top:0;right:0;bottom:0;width:min(30rem,92vw);background:#fff;color:#222;font-family:'Malgun Gothic',sans-serif;font-size:15px;padding:16px;overflow:auto;transform:translateX(105%);transition:transform .25s;box-shadow:-6px 0 24px rgba(0,0,0,.35);z-index:9}
 #set.open{transform:none}
 #set h3{margin:14px 0 6px;font-size:16px;border-bottom:2px solid #ddd;padding-bottom:4px}
@@ -66,6 +71,7 @@ body{height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font),
   </div>
 </div>
 
+<button id="fs" title="전체화면" aria-label="전체화면">⛶</button>
 <button id="gear" title="설정 (S 키)" aria-label="설정">⚙</button>
 <aside id="set" aria-label="설정">
   <button class="p" id="close">닫기</button>
@@ -86,6 +92,10 @@ body{height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font),
   <label>시계 위치 <select id="flip"><option value="0">왼쪽</option><option value="1">오른쪽</option></select></label>
   <label>시계 보조 숫자(분) <select id="mins"><option value="1">표시</option><option value="0">숨김</option></select></label>
   <label>슬라이드 간격(초) <input type="text" id="interval" size="3" style="width:60px"></label>
+  <h3>고정 공지</h3>
+  <p class="hint">켜면 신간·행사 슬라이드 대신 아래 공지 하나만 계속 보여요. 형식은 <b>구분|제목|설명</b> 한 줄이에요. 줄바꿈은 &lt;br&gt;을 쓰세요.</p>
+  <label>고정 공지 <select id="pinOn"><option value="0">끄기 (슬라이드 돌리기)</option><option value="1">켜기 (이 공지만 표시)</option></select></label>
+  <textarea id="pin" style="height:90px" placeholder="공지|오늘은 도서관 휴관일이에요|내일 오전 9시에 다시 열어요"></textarea>
   <h3>신간·행사 내용</h3>
   <p class="hint">한 줄에 하나씩: <b>구분|제목|설명|이미지주소(선택)</b><br>예) 신간|바다로 간 고양이|표지가 예쁜 동화책이에요|https://...</p>
   <textarea id="slidesTxt"></textarea>
@@ -107,9 +117,15 @@ const PRESETS={
  '숲속 칠판':{bg:'#16343a',panel:'#1f4a52',ink:'#f3f7f4',accent:'#f2b134',face:'#f4f8f5',faceInk:'#16343a'},
  '밤하늘':{bg:'#141b3a',panel:'#212b57',ink:'#eef2ff',accent:'#7fd1ff',face:'#e9eeff',faceInk:'#141b3a'},
  '밝은 교실':{bg:'#eef3f8',panel:'#ffffff',ink:'#1b2a3a',accent:'#e4572e',face:'#fffaf0',faceInk:'#1b2a3a'},
- '딸기우유':{bg:'#ffe3ea',panel:'#fff5f7',ink:'#4a2030',accent:'#e0457b',face:'#ffffff',faceInk:'#4a2030'}
+ '딸기우유':{bg:'#ffe3ea',panel:'#fff5f7',ink:'#4a2030',accent:'#e0457b',face:'#ffffff',faceInk:'#4a2030'},
+ '푸른 바다':{bg:'#0f3d5c',panel:'#17577f',ink:'#f1f8ff',accent:'#ffd166',face:'#f4faff',faceInk:'#0f3d5c'},
+ '노을':{bg:'#3b1f2b',panel:'#57303f',ink:'#fff3e8',accent:'#ff9f5a',face:'#fff6ee',faceInk:'#3b1f2b'},
+ '라벤더':{bg:'#efe9fb',panel:'#ffffff',ink:'#2e2450',accent:'#7c5cd6',face:'#fbf9ff',faceInk:'#2e2450'},
+ '민트':{bg:'#e3f6ef',panel:'#ffffff',ink:'#1d3b34',accent:'#1fa37a',face:'#f9fffc',faceInk:'#1d3b34'},
+ '원목 서재':{bg:'#4a3424',panel:'#624632',ink:'#fbf1e2',accent:'#e9b44c',face:'#fdf6e9',faceInk:'#3a2718'},
+ '고대비 흑백':{bg:'#000000',panel:'#1a1a1a',ink:'#ffffff',accent:'#ffe600',face:'#ffffff',faceInk:'#000000'}
 };
-const D=Object.assign({font:'Gowun Dodum',scale:1.6,flip:'0',mins:'1',interval:'8',yt:'',ytw:26,
+const D=Object.assign({font:'Gowun Dodum',scale:1.6,flip:'0',mins:'1',interval:'8',pin:'',pinOn:'0',yt:'',ytw:26,
  ticker:'조용히 책을 읽는 도서관이에요. 책은 3주 동안 빌릴 수 있어요.',
  slides:'신간|신간 도서 제목 예시|여기에 책 소개를 두세 줄로 적어 주세요.\n행사|독서의 달 행사|11월 한 달 동안 독서 퀴즈와 책갈피 만들기를 해요.\n안내|도서 반납 안내|빌린 책은 기한 안에 반납함에 넣어 주세요.'},PRESETS['숲속 칠판']);
 let S=Object.assign({},D);
@@ -151,12 +167,15 @@ function tick(){
 }
 
 /* 슬라이드 */
-function br(el,str){str.split(/<br>/i).forEach((t,i)=>{if(i)el.appendChild(document.createElement('br'));el.appendChild(document.createTextNode(t.trim()))})}
+function br(el,str){str.split(/[<＜]\s*\/?\s*br\s*\/?\s*[>＞]/i).forEach((t,i)=>{if(i)el.appendChild(document.createElement('br'));el.appendChild(document.createTextNode(t))})}
 let idx=0,timer;
 function buildSlides(){
  const box=$('slides'),dots=$('dots');box.innerHTML='';dots.innerHTML='';
- const rows=S.slides.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split('|').map(x=>x.trim()));
- rows.forEach(([tag,title,desc,img],i)=>{
+ const pinned=S.pinOn=='1'&&S.pin.trim()!=='';
+ const src=pinned?S.pin.trim().split('\n')[0]:S.slides;
+ const rows=src.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split('|').map(x=>x.trim()));
+ box.classList.toggle('pinned',pinned);
+ rows.forEach(([tag,title,desc,img])=>{
   const s=document.createElement('div');s.className='s';
   if(img&&/^https?:/.test(img)){const im=document.createElement('img');im.src=img;im.alt='';s.appendChild(im)}
   const t=document.createElement('div');t.className='t';
@@ -164,11 +183,13 @@ function buildSlides(){
   const h=document.createElement('h2');br(h,title||'');
   const p=document.createElement('p');br(p,desc||'');
   t.append(g,h,p);s.appendChild(t);box.appendChild(s);
-  dots.appendChild(document.createElement('i'));
+  if(!pinned&&rows.length>1)dots.appendChild(document.createElement('i'));
  });
  idx=0;show();clearInterval(timer);
- const sec=Math.max(3,parseFloat(S.interval)||8);
- timer=setInterval(()=>{idx++;show()},sec*1000);
+ if(!pinned&&rows.length>1){
+  const sec=Math.max(3,parseFloat(S.interval)||8);
+  timer=setInterval(()=>{idx++;show()},sec*1000);
+ }
 }
 function show(){
  const ss=[...$('slides').children],dd=[...$('dots').children];if(!ss.length)return;
@@ -183,7 +204,7 @@ function buildYt(){
  if(list)src=`https://www.youtube.com/embed/${vid||'videoseries'}?list=${list}&loop=1&rel=0`;
  else if(vid)src=`https://www.youtube.com/embed/${vid}?loop=1&playlist=${vid}&rel=0`;
  box.classList.toggle('has',!!src);
- if(src){const f=document.createElement('iframe');f.src=src;f.allow='autoplay; encrypted-media; fullscreen';f.title='음악';box.appendChild(f)}
+ if(src){const f=document.createElement('iframe');f.referrerPolicy='strict-origin-when-cross-origin';f.src=src;f.allow='autoplay; encrypted-media; fullscreen';f.title='음악';box.appendChild(f)}
 }
 
 /* 적용 */
@@ -192,7 +213,7 @@ function apply(){
  ['bg','panel','ink','accent','face','faceInk'].forEach(k=>r.setProperty('--'+k,S[k]));
  r.setProperty('--font',`'${S.font}'`);r.setProperty('--scale',S.scale);
  $('wrap').classList.toggle('flip',S.flip=='1');
- $('ticker').textContent=S.ticker;$('ticker').style.display=S.ticker?'flex':'none';
+ {const tk=$('ticker');tk.innerHTML='';const dv=document.createElement('div');br(dv,S.ticker);tk.appendChild(dv)}$('ticker').style.display=S.ticker?'flex':'none';
  $('yt').style.width=S.ytw+'vw';
  buildFace();tick();
 }
@@ -204,11 +225,13 @@ const colorIds=['bg','panel','ink','accent','face','faceInk'];
 function fill(){
  colorIds.forEach(k=>$(k).value=S[k]);
  $('font').value=S.font;$('scale').value=S.scale;$('flip').value=S.flip;$('mins').value=S.mins;
- $('interval').value=S.interval;$('slidesTxt').value=S.slides;$('tickerTxt').value=S.ticker;$('yt_in').value=S.yt;$('ytw').value=S.ytw;
+ $('interval').value=S.interval;$('slidesTxt').value=S.slides;$('tickerTxt').value=S.ticker;$('yt_in').value=S.yt;$('ytw').value=S.ytw;$('pin').value=S.pin;$('pinOn').value=S.pinOn;
 }
 colorIds.concat(['font','scale','flip','mins']).forEach(k=>$(k).addEventListener('input',e=>{S[k]=e.target.value;save();apply()}));
 $('ytw').addEventListener('input',e=>{S.ytw=e.target.value;save();apply()});
 $('tickerTxt').addEventListener('input',e=>{S.ticker=e.target.value;save();apply()});
+$('pinOn').addEventListener('input',e=>{S.pinOn=e.target.value;buildSlides()});
+$('pin').addEventListener('change',e=>{S.pin=e.target.value;buildSlides()});
 $('interval').addEventListener('change',e=>{S.interval=e.target.value;save();buildSlides()});
 $('slidesTxt').addEventListener('change',e=>{S.slides=e.target.value;save();buildSlides()});
 $('yt_in').addEventListener('change',e=>{S.yt=e.target.value.trim();save();buildYt()});
@@ -219,6 +242,13 @@ $('copy').onclick=()=>{
  else{o.style.display='block';o.value=txt;o.select()}
 };
 $('reload').onclick=()=>loadRemote(true);
+$('fs').onclick=()=>{
+ const d=document,e=d.documentElement;
+ try{
+  if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}
+  else{const r=(e.requestFullscreen||e.webkitRequestFullscreen).call(e);if(r&&r.catch)r.catch(()=>{})}
+ }catch(err){}
+};
 const panel=$('set');
 $('gear').onclick=()=>panel.classList.toggle('open');
 $('close').onclick=()=>panel.classList.remove('open');
